@@ -1,6 +1,8 @@
 import { EnhancedSidebar } from "@/components/navigation/enhanced-sidebar"
 import { EnhancedHeader } from "@/components/navigation/enhanced-header"
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">

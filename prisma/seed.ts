@@ -91,7 +91,7 @@ async function main() {
       lines: {
         create: [
           { lineNo: 1, itemId: itemA.id, quantity: '20', unitCost: '22.50', warehouseId: whMain.id },
-          { lineNo: 2, itemId: itemB.id, quantity: '1'0, unitCost: '38.00', warehouseId: whMain.id },
+          { lineNo: 2, itemId: itemB.id, quantity: '10', unitCost: '38.00', warehouseId: whMain.id },
         ],
       },
     },
@@ -115,7 +115,7 @@ async function main() {
         txnType: InventoryTxnType.RECEIPT,
         itemId: itemB.id,
         warehouseId: whMain.id,
-        quantity: '1'0,
+        quantity: '10',
         unitCost: '38.00',
         referenceType: "PO",
         referenceId: "PO-90001",
@@ -141,7 +141,6 @@ async function main() {
         referenceId: so.orderNo,
       },
     ],
-    skipDuplicates: true,
   })
 
   // Finance: minimal COA + demo journal
