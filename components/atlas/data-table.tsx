@@ -32,3 +32,16 @@ export function Td({ children, className, ...props }: React.TdHTMLAttributes<HTM
 export function Tr({ children, className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return <tr className={cn("hover:bg-muted/20 transition-colors", className)} {...props}>{children}</tr>
 }
+
+// Aliases for compatibility
+export const DataTableHeader = ({ children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+  <thead {...props}>{children}</thead>
+)
+
+export const DataTableBody = ({ children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+  <tbody {...props}>{children}</tbody>
+)
+
+export const DataTableRow = Tr
+export const DataTableHead = Th
+export const DataTableCell = Td

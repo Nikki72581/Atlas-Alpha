@@ -146,11 +146,13 @@ export async function createJournalEntry(data: JournalFormData) {
         lines: {
           create: data.lines.map((line) => ({
             lineNo: line.lineNo,
-            accountId: line.accountId,
+            account: {
+              connect: { id: line.accountId },
+            },
             debit: line.debit,
             credit: line.credit,
             memo: line.memo,
-            dimensions: line.dimensions || null,
+            ...(line.dimensions && { dimensions: line.dimensions }),
           })),
         },
       },
@@ -208,11 +210,13 @@ export async function updateJournalEntry(id: string, data: JournalFormData) {
           deleteMany: {},
           create: data.lines.map((line) => ({
             lineNo: line.lineNo,
-            accountId: line.accountId,
+            account: {
+              connect: { id: line.accountId },
+            },
             debit: line.debit,
             credit: line.credit,
             memo: line.memo,
-            dimensions: line.dimensions || null,
+            ...(line.dimensions && { dimensions: line.dimensions }),
           })),
         },
       },
@@ -339,12 +343,14 @@ export async function createReversingEntry(id: string, reversalDate?: Date) {
         lines: {
           create: original.lines.map((line) => ({
             lineNo: line.lineNo,
-            accountId: line.accountId,
+            account: {
+              connect: { id: line.accountId },
+            },
             // Flip debit and credit
             debit: line.credit,
             credit: line.debit,
             memo: line.memo ? `Reversal: ${line.memo}` : "Reversal entry",
-            dimensions: line.dimensions,
+            ...(line.dimensions && { dimensions: line.dimensions }),
           })),
         },
       },
