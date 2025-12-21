@@ -14,18 +14,24 @@ import { DataTable, DataTableBody, DataTableCell, DataTableHead, DataTableHeader
 import { MoreHorizontal, Edit, Trash2, CheckCircle, RotateCcw, Plus } from "lucide-react"
 import { JournalDialog } from "./journal-dialog"
 import { postJournalEntry, deleteJournalEntry, createReversingEntry } from "./actions"
-import { Account, JournalEntry, JournalLine, JournalStatus } from "@prisma/client"
+import { Account, JournalEntry, JournalLine, JournalStatus, DimensionDefinition, DimensionValue } from "@prisma/client"
 
 type JournalWithLines = JournalEntry & {
   lines: (JournalLine & { account: Account })[]
 }
 
+type DimensionWithValues = DimensionDefinition & {
+  values: DimensionValue[]
+}
+
 type JournalsTableProps = {
   journals: JournalWithLines[]
   accounts: Account[]
+  dimensionDefinitions: DimensionWithValues[]
+  dimensionsEnabled: boolean
 }
 
-export function JournalsTable({ journals, accounts }: JournalsTableProps) {
+export function JournalsTable({ journals, accounts, dimensionDefinitions, dimensionsEnabled }: JournalsTableProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedJournal, setSelectedJournal] = useState<JournalWithLines | undefined>(undefined)
 
@@ -228,6 +234,8 @@ export function JournalsTable({ journals, accounts }: JournalsTableProps) {
         onOpenChange={setDialogOpen}
         accounts={accounts}
         journalEntry={selectedJournal}
+        dimensionDefinitions={dimensionDefinitions}
+        dimensionsEnabled={dimensionsEnabled}
       />
     </div>
   )

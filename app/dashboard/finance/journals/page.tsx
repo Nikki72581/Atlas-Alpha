@@ -3,6 +3,11 @@ import { DEMO_ORG_ID } from "@/lib/demo-org"
 import { JournalsTable } from "./journals-table"
 
 export default async function JournalsPage() {
+  const organization = await prisma.organization.findUnique({
+    where: { id: DEMO_ORG_ID },
+    select: { dimensionsEnabled: true },
+  })
+
   const journals = await prisma.journalEntry.findMany({
     where: { organizationId: DEMO_ORG_ID },
     orderBy: { postingDate: "desc" },
@@ -15,6 +20,19 @@ export default async function JournalsPage() {
     orderBy: { number: "asc" },
   })
 
+  const dimensionDefinitions = organization?.dimensionsEnabled
+    ? await prisma.dimensionDefinition.findMany({
+        where: { organizationId: DEMO_ORG_ID, isActive: true },
+        include: {
+          values: {
+            where: { isActive: true },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { sortOrder: "asc" },
+      })
+    : []
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,7 +42,12 @@ export default async function JournalsPage() {
         </p>
       </div>
 
-      <JournalsTable journals={journals} accounts={accounts} />
+      <JournalsTable
+        journals={journals}
+        accounts={accounts}
+        dimensionDefinitions={dimensionDefinitions}
+        dimensionsEnabled={organization?.dimensionsEnabled ?? false}
+      />
     </div>
   )
 }

@@ -22,10 +22,15 @@ import {
 } from "@/components/ui/select"
 import { Plus, Trash2 } from "lucide-react"
 import { createJournalEntry, updateJournalEntry, getNextJournalNumber, type JournalLineFormData, type JournalFormData } from "./actions"
-import { Account, JournalEntry, JournalLine } from "@prisma/client"
+import { DimensionInput } from "./dimension-input"
+import { Account, JournalEntry, JournalLine, DimensionDefinition, DimensionValue } from "@prisma/client"
 
 type JournalWithLines = JournalEntry & {
   lines: (JournalLine & { account: Account })[]
+}
+
+type DimensionWithValues = DimensionDefinition & {
+  values: DimensionValue[]
 }
 
 type JournalDialogProps = {
@@ -33,9 +38,11 @@ type JournalDialogProps = {
   onOpenChange: (open: boolean) => void
   accounts: Account[]
   journalEntry?: JournalWithLines
+  dimensionDefinitions: DimensionWithValues[]
+  dimensionsEnabled: boolean
 }
 
-export function JournalDialog({ open, onOpenChange, accounts, journalEntry }: JournalDialogProps) {
+export function JournalDialog({ open, onOpenChange, accounts, journalEntry, dimensionDefinitions, dimensionsEnabled }: JournalDialogProps) {
   const isEditing = !!journalEntry
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -206,6 +213,9 @@ export function JournalDialog({ open, onOpenChange, accounts, journalEntry }: Jo
                       <th className="text-left p-2 text-sm font-medium w-12">#</th>
                       <th className="text-left p-2 text-sm font-medium">Account</th>
                       <th className="text-left p-2 text-sm font-medium">Memo</th>
+                      {dimensionsEnabled && (
+                        <th className="text-left p-2 text-sm font-medium">Dimensions</th>
+                      )}
                       <th className="text-right p-2 text-sm font-medium w-32">Debit</th>
                       <th className="text-right p-2 text-sm font-medium w-32">Credit</th>
                       <th className="w-12"></th>
@@ -240,6 +250,15 @@ export function JournalDialog({ open, onOpenChange, accounts, journalEntry }: Jo
                             placeholder="Line memo"
                           />
                         </td>
+                        {dimensionsEnabled && (
+                          <td className="p-2">
+                            <DimensionInput
+                              availableDimensions={dimensionDefinitions}
+                              dimensions={line.dimensions || {}}
+                              onChange={(dims) => updateLine(line.lineNo, "dimensions", dims)}
+                            />
+                          </td>
+                        )}
                         <td className="p-2">
                           <Input
                             className="h-8 text-right"
@@ -277,7 +296,7 @@ export function JournalDialog({ open, onOpenChange, accounts, journalEntry }: Jo
                     ))}
                     {/* Totals Row */}
                     <tr className="border-t bg-muted/30 font-medium">
-                      <td colSpan={3} className="p-2 text-right">
+                      <td colSpan={dimensionsEnabled ? 4 : 3} className="p-2 text-right">
                         Totals:
                       </td>
                       <td className="p-2 text-right tabular-nums">
@@ -290,7 +309,7 @@ export function JournalDialog({ open, onOpenChange, accounts, journalEntry }: Jo
                     </tr>
                     {!isBalanced && (
                       <tr className="border-t bg-destructive/10">
-                        <td colSpan={3} className="p-2 text-right text-sm text-destructive">
+                        <td colSpan={dimensionsEnabled ? 4 : 3} className="p-2 text-right text-sm text-destructive">
                           Out of balance:
                         </td>
                         <td colSpan={3} className="p-2 text-right text-sm text-destructive tabular-nums">

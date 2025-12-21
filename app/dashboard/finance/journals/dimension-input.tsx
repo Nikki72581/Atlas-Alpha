@@ -18,29 +18,22 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tags, X } from "lucide-react"
-import {
-  DEFAULT_DIMENSIONS,
-  getAvailableDimensions,
-  isDimensionRequired,
-  getSampleDimensionValues,
-  type DimensionDefinition,
-} from "@/lib/dimensions"
-import { AccountType } from "@prisma/client"
+import { DimensionDefinition, DimensionValue } from "@prisma/client"
+
+type DimensionWithValues = DimensionDefinition & {
+  values: DimensionValue[]
+}
 
 type DimensionInputProps = {
-  accountType: AccountType | null
+  availableDimensions: DimensionWithValues[]
   dimensions: Record<string, string>
   onChange: (dimensions: Record<string, string>) => void
 }
 
-export function DimensionInput({ accountType, dimensions, onChange }: DimensionInputProps) {
+export function DimensionInput({ availableDimensions, dimensions, onChange }: DimensionInputProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const availableDimensions = accountType
-    ? getAvailableDimensions(accountType)
-    : DEFAULT_DIMENSIONS
-
-  const addDimension = (dim: DimensionDefinition, value: string) => {
+  const addDimension = (dim: DimensionWithValues, value: string) => {
     if (value.trim()) {
       onChange({ ...dimensions, [dim.code]: value.trim() })
     }
@@ -72,17 +65,15 @@ export function DimensionInput({ accountType, dimensions, onChange }: DimensionI
           <PopoverContent className="w-80" align="end">
             <div className="space-y-3">
               <h4 className="font-medium text-sm">Add Dimension</h4>
-              {availableDimensions.map((dim) => {
-                const isRequired = accountType ? isDimensionRequired(dim.code, accountType) : false
+              {availableDimensions.filter(d => d.isActive).map((dim) => {
                 const hasValue = !!dimensions[dim.code]
-                const sampleValues = getSampleDimensionValues(dim.type)
 
                 return (
                   <div key={dim.code} className="space-y-1">
                     <Label className="text-xs">
-                      {dim.name} {isRequired && <span className="text-destructive">*</span>}
+                      {dim.name} {dim.isRequired && <span className="text-destructive">*</span>}
                     </Label>
-                    {sampleValues.length > 0 ? (
+                    {dim.values.length > 0 ? (
                       <Select
                         value={dimensions[dim.code] || ""}
                         onValueChange={(value) => updateDimension(dim.code, value)}
@@ -91,9 +82,9 @@ export function DimensionInput({ accountType, dimensions, onChange }: DimensionI
                           <SelectValue placeholder={`Select ${dim.name.toLowerCase()}`} />
                         </SelectTrigger>
                         <SelectContent>
-                          {sampleValues.map((value) => (
-                            <SelectItem key={value} value={value}>
-                              {value}
+                          {dim.values.filter(v => v.isActive).map((value) => (
+                            <SelectItem key={value.code} value={value.code}>
+                              {value.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

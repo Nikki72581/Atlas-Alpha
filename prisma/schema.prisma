@@ -8,21 +8,24 @@ datasource db {
 }
 
 model Organization {
-  id             String                 @id @default(cuid())
-  name           String
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  accounts       Account[]
-  customers      Customer[]
-  inventoryTxns  InventoryTransaction[]
-  items          Item[]
-  journals       JournalEntry[]
-  periods        Period[]
-  purchaseOrders PurchaseOrder[]
-  salesOrders    SalesOrder[]
-  users          User[]
-  vendors        Vendor[]
-  warehouses     Warehouse[]
+  id                    String                 @id @default(cuid())
+  name                  String
+  dimensionsEnabled     Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  accounts              Account[]
+  customers             Customer[]
+  dimensionDefinitions  DimensionDefinition[]
+  dimensionValues       DimensionValue[]
+  inventoryTxns         InventoryTransaction[]
+  items                 Item[]
+  journals              JournalEntry[]
+  periods               Period[]
+  purchaseOrders        PurchaseOrder[]
+  salesOrders           SalesOrder[]
+  users                 User[]
+  vendors               Vendor[]
+  warehouses            Warehouse[]
 }
 
 model User {
@@ -317,4 +320,51 @@ enum PeriodStatus {
   OPEN
   CLOSED
   LOCKED
+}
+
+enum DimensionType {
+  DEPARTMENT
+  PROJECT
+  LOCATION
+  ENTITY
+  CUSTOMER
+  VENDOR
+  CUSTOM
+}
+
+model DimensionDefinition {
+  id             String         @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  type           DimensionType
+  isRequired     Boolean        @default(false)
+  isActive       Boolean        @default(true)
+  accountTypes   Json?
+  sortOrder      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  values         DimensionValue[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model DimensionValue {
+  id                   String              @id @default(cuid())
+  organizationId       String
+  dimensionDefinitionId String
+  code                 String
+  name                 String
+  isActive             Boolean             @default(true)
+  sortOrder            Int                 @default(0)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  dimensionDefinition  DimensionDefinition @relation(fields: [dimensionDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([dimensionDefinitionId, code])
+  @@index([organizationId])
+  @@index([dimensionDefinitionId])
 }

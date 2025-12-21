@@ -25,6 +25,7 @@ import {
   BookOpen,
   Calendar,
   TrendingUp,
+  Tags,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -138,6 +139,12 @@ const navigation: NavItem[] = [
         title: 'Accounting Periods',
         href: '/dashboard/finance/periods',
         icon: Calendar,
+        iconColor: 'text-slate-700 dark:text-slate-200',
+      },
+      {
+        title: 'Dimensions',
+        href: '/dashboard/finance/dimensions',
+        icon: Tags,
         iconColor: 'text-slate-700 dark:text-slate-200',
       },
       {
