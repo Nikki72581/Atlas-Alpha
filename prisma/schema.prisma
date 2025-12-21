@@ -17,6 +17,7 @@ model Organization {
   inventoryTxns  InventoryTransaction[]
   items          Item[]
   journals       JournalEntry[]
+  periods        Period[]
   purchaseOrders PurchaseOrder[]
   salesOrders    SalesOrder[]
   users          User[]
@@ -227,13 +228,16 @@ model JournalEntry {
   description    String?
   postingDate    DateTime      @default(now())
   status         JournalStatus @default(DRAFT)
+  periodId       String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  period         Period?       @relation(fields: [periodId], references: [id])
   lines          JournalLine[]
 
   @@unique([organizationId, journalNo])
   @@index([organizationId])
+  @@index([periodId])
 }
 
 model JournalLine {
@@ -251,6 +255,27 @@ model JournalLine {
 
   @@unique([journalEntryId, lineNo])
   @@index([accountId])
+}
+
+model Period {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  status         PeriodStatus   @default(OPEN)
+  fiscalYear     Int
+  periodNumber   Int
+  closedAt       DateTime?
+  closedBy       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  journalEntries JournalEntry[]
+
+  @@unique([organizationId, fiscalYear, periodNumber])
+  @@index([organizationId])
+  @@index([status])
 }
 
 enum ItemType {
@@ -286,4 +311,10 @@ enum AccountType {
 enum JournalStatus {
   DRAFT
   POSTED
+}
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
 }

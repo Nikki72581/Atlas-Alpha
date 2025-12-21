@@ -22,6 +22,9 @@ import {
   ChevronRight,
   Database,
   Receipt,
+  BookOpen,
+  Calendar,
+  TrendingUp,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -122,14 +125,45 @@ const navigation: NavItem[] = [
       {
         title: 'Chart of Accounts',
         href: '/dashboard/finance/accounts',
+        icon: BookOpen,
+        iconColor: 'text-slate-700 dark:text-slate-200',
+      },
+      {
+        title: 'Journal Entries',
+        href: '/dashboard/finance/journals',
         icon: FileText,
         iconColor: 'text-slate-700 dark:text-slate-200',
       },
       {
-        title: 'Journals',
-        href: '/dashboard/finance/journals',
-        icon: FileText,
+        title: 'Accounting Periods',
+        href: '/dashboard/finance/periods',
+        icon: Calendar,
         iconColor: 'text-slate-700 dark:text-slate-200',
+      },
+      {
+        title: 'Reports',
+        icon: TrendingUp,
+        iconColor: 'text-slate-700 dark:text-slate-200',
+        children: [
+          {
+            title: 'Trial Balance',
+            href: '/dashboard/finance/reports/trial-balance',
+            icon: BarChart3,
+            iconColor: 'text-slate-600 dark:text-slate-300',
+          },
+          {
+            title: 'Balance Sheet',
+            href: '/dashboard/finance/reports/balance-sheet',
+            icon: FileText,
+            iconColor: 'text-slate-600 dark:text-slate-300',
+          },
+          {
+            title: 'Income Statement',
+            href: '/dashboard/finance/reports/income-statement',
+            icon: TrendingUp,
+            iconColor: 'text-slate-600 dark:text-slate-300',
+          },
+        ],
       },
     ],
   },
@@ -159,9 +193,11 @@ export function EnhancedSidebar({
 }: EnhancedSidebarProps) {
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<string[]>([
-    'Sales Management',
-    'Commissions',
-    'Administration',
+    'Order to Cash',
+    'Procure to Pay',
+    'Inventory',
+    'Finance',
+    'Reports',
   ])
 
   const toggleSection = (title: string) => {

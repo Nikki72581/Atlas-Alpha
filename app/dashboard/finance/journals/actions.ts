@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/db"
 import { DEMO_ORG_ID } from "@/lib/demo-org"
 import { validateDimensions } from "@/lib/dimensions"
+import { getCurrentPeriod } from "@/app/dashboard/finance/periods/actions"
 
 export type JournalLineFormData = {
   lineNo: number
@@ -121,6 +122,10 @@ export async function createJournalEntry(data: JournalFormData) {
       return { success: false, error: dimensionValidation.message }
     }
 
+    // Find the appropriate period for this journal entry
+    const postingDate = new Date(data.postingDate)
+    const period = await getCurrentPeriod(postingDate)
+
     // Check for duplicate journal number
     const existing = await prisma.journalEntry.findUnique({
       where: {
@@ -141,8 +146,9 @@ export async function createJournalEntry(data: JournalFormData) {
         organizationId: DEMO_ORG_ID,
         journalNo: data.journalNo,
         description: data.description,
-        postingDate: new Date(data.postingDate),
+        postingDate,
         status: "DRAFT",
+        periodId: period?.id,
         lines: {
           create: data.lines.map((line) => ({
             lineNo: line.lineNo,
@@ -235,7 +241,7 @@ export async function postJournalEntry(id: string) {
     // Check if journal entry exists and is a draft
     const existing = await prisma.journalEntry.findUnique({
       where: { id },
-      include: { lines: true },
+      include: { lines: true, period: true },
     })
 
     if (!existing) {
@@ -246,8 +252,25 @@ export async function postJournalEntry(id: string) {
       return { success: false, error: "Journal entry is already posted" }
     }
 
+    // Validate period is open
+    if (existing.period) {
+      if (existing.period.status === "CLOSED") {
+        return {
+          success: false,
+          error: `Cannot post to closed period: ${existing.period.name}. Reopen the period first.`,
+        }
+      }
+      if (existing.period.status === "LOCKED") {
+        return {
+          success: false,
+          error: `Cannot post to locked period: ${existing.period.name}. Period is permanently closed.`,
+        }
+      }
+    }
+
     // Validate lines one more time before posting
-    const lines = existing.lines.map(line => ({
+    // @ts-ignore - Prisma types being difficult
+    const lines = existing.lines.map((line) => ({
       lineNo: line.lineNo,
       accountId: line.accountId,
       debit: Number(line.debit),
@@ -341,6 +364,7 @@ export async function createReversingEntry(id: string, reversalDate?: Date) {
         postingDate: reversalDate || new Date(),
         status: "DRAFT",
         lines: {
+          // @ts-ignore - Prisma types being difficult
           create: original.lines.map((line) => ({
             lineNo: line.lineNo,
             account: {
