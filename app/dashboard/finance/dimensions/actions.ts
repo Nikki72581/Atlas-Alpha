@@ -79,7 +79,7 @@ export async function createDimensionDefinition(data: DimensionDefinitionFormDat
         type: data.type,
         isRequired: data.isRequired,
         isActive: data.isActive,
-        accountTypes: data.accountTypes || null,
+        ...(data.accountTypes && { accountTypes: data.accountTypes }),
         sortOrder: data.sortOrder || 0,
       },
     })
@@ -104,7 +104,7 @@ export async function updateDimensionDefinition(id: string, data: DimensionDefin
         type: data.type,
         isRequired: data.isRequired,
         isActive: data.isActive,
-        accountTypes: data.accountTypes || null,
+        ...(data.accountTypes && { accountTypes: data.accountTypes }),
         sortOrder: data.sortOrder || 0,
       },
     })
