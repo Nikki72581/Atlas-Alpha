@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { AccountType } from "@prisma/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable, Td, Th, Tr } from "@/components/atlas/data-table"
 import { Button } from "@/components/ui/button"
@@ -21,7 +20,7 @@ type Account = {
   id: string
   number: string
   name: string
-  type: AccountType
+  type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE"
   isActive: boolean
 }
 
@@ -107,21 +106,21 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value={AccountType.ASSET}>Asset</SelectItem>
-                <SelectItem value={AccountType.LIABILITY}>Liability</SelectItem>
-                <SelectItem value={AccountType.EQUITY}>Equity</SelectItem>
-                <SelectItem value={AccountType.REVENUE}>Revenue</SelectItem>
-                <SelectItem value={AccountType.EXPENSE}>Expense</SelectItem>
+                <SelectItem value="ASSET">Asset</SelectItem>
+                <SelectItem value="LIABILITY">Liability</SelectItem>
+                <SelectItem value="EQUITY">Equity</SelectItem>
+                <SelectItem value="REVENUE">Revenue</SelectItem>
+                <SelectItem value="EXPENSE">Expense</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>

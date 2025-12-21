@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { AccountType } from "@prisma/client"
 import {
   Dialog,
   DialogContent,
@@ -36,10 +35,8 @@ import { createAccount, updateAccount, type AccountFormData } from "./actions"
 const accountSchema = z.object({
   number: z.string().min(1, "Account number is required"),
   name: z.string().min(1, "Account name is required"),
-  type: z.nativeEnum(AccountType, {
-    required_error: "Account type is required",
-  }),
-  isActive: z.boolean().default(true),
+  type: z.enum(["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]),
+  isActive: z.boolean(),
 })
 
 type AccountFormValues = z.infer<typeof accountSchema>
@@ -48,7 +45,7 @@ type Account = {
   id: string
   number: string
   name: string
-  type: AccountType
+  type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE"
   isActive: boolean
 }
 
@@ -74,7 +71,7 @@ export function AccountDialog({ open, onOpenChange, account }: AccountDialogProp
       : {
           number: "",
           name: "",
-          type: AccountType.ASSET,
+          type: "ASSET",
           isActive: true,
         },
   })
@@ -107,7 +104,7 @@ export function AccountDialog({ open, onOpenChange, account }: AccountDialogProp
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>{account ? "Edit Account" : "New Account"}</DialogTitle>
           <DialogDescription>
@@ -160,11 +157,11 @@ export function AccountDialog({ open, onOpenChange, account }: AccountDialogProp
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={AccountType.ASSET}>Asset</SelectItem>
-                      <SelectItem value={AccountType.LIABILITY}>Liability</SelectItem>
-                      <SelectItem value={AccountType.EQUITY}>Equity</SelectItem>
-                      <SelectItem value={AccountType.REVENUE}>Revenue</SelectItem>
-                      <SelectItem value={AccountType.EXPENSE}>Expense</SelectItem>
+                      <SelectItem value="ASSET">Asset</SelectItem>
+                      <SelectItem value="LIABILITY">Liability</SelectItem>
+                      <SelectItem value="EQUITY">Equity</SelectItem>
+                      <SelectItem value="REVENUE">Revenue</SelectItem>
+                      <SelectItem value="EXPENSE">Expense</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
