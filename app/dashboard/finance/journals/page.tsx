@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db"
 import { DEMO_ORG_ID } from "@/lib/demo-org"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DataTable, Td, Th, Tr } from "@/components/atlas/data-table"
+import { JournalsTable } from "./journals-table"
 
 export default async function JournalsPage() {
   const journals = await prisma.journalEntry.findMany({
@@ -11,69 +10,21 @@ export default async function JournalsPage() {
     take: 50,
   })
 
+  const accounts = await prisma.account.findMany({
+    where: { organizationId: DEMO_ORG_ID, isActive: true },
+    orderBy: { number: "asc" },
+  })
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Journals</h2>
+        <h2 className="text-xl font-semibold">Journal Entries</h2>
         <p className="text-sm text-muted-foreground">
           Ledger entries are immutable once posted. Corrections are reversals, like adults do it.
         </p>
       </div>
 
-      {journals.map((j) => (
-        <Card key={j.id} className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-base">
-              {j.journalNo} <span className="text-sm text-muted-foreground">({j.status})</span>
-            </CardTitle>
-            <div className="text-sm text-muted-foreground">
-              {j.postingDate.toLocaleDateString()} • {j.description ?? "—"}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <DataTable className="border-0">
-              <thead>
-                <tr>
-                  <Th>Line</Th>
-                  <Th>Account</Th>
-                  <Th>Memo</Th>
-                  <Th className="text-right">Debit</Th>
-                  <Th className="text-right">Credit</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {j.lines.map((l) => (
-                  <Tr key={l.id}>
-                    <Td className="text-muted-foreground">{l.lineNo}</Td>
-                    <Td className="font-medium">
-                      <span className="font-mono text-xs">{l.account.number}</span> • {l.account.name}
-                    </Td>
-                    <Td className="text-muted-foreground">{l.memo ?? "—"}</Td>
-                    <Td className="text-right tabular-nums">${parseFloat(l.debit.toString()).toFixed(2)}</Td>
-                    <Td className="text-right tabular-nums">${parseFloat(l.credit.toString()).toFixed(2)}</Td>
-                  </Tr>
-                ))}
-                {j.lines.length === 0 && (
-                  <Tr>
-                    <Td className="text-muted-foreground" colSpan={5}>
-                      No lines.
-                    </Td>
-                  </Tr>
-                )}
-              </tbody>
-            </DataTable>
-          </CardContent>
-        </Card>
-      ))}
-
-      {journals.length === 0 && (
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-base">No journals yet</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">Seed the database to see demo journals.</CardContent>
-        </Card>
-      )}
+      <JournalsTable journals={journals} accounts={accounts} />
     </div>
   )
 }
