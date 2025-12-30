@@ -30,8 +30,8 @@ const customerSchema = z.object({
   name: z.string().min(1, "Customer name is required"),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().optional(),
-  termsNetDays: z.coerce.number().min(0, "Terms must be 0 or greater").default(30),
-  isActive: z.boolean().default(true),
+  termsNetDays: z.number().min(0, "Terms must be 0 or greater"),
+  isActive: z.boolean(),
 })
 
 type CustomerFormValues = z.infer<typeof customerSchema>
