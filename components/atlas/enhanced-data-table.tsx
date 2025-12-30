@@ -194,14 +194,10 @@ export function EnhancedDataTable<TData>({
             {enableSelection && (
               <th className="h-10 px-3 text-left font-medium text-muted-foreground border-b bg-muted/30 w-12">
                 <Checkbox
-                  checked={allSelected}
-                  ref={(el) => {
-                    if (el) {
-                      el.indeterminate = someSelected
-                    }
-                  }}
+                  checked={allSelected || someSelected}
                   onCheckedChange={handleSelectAll}
                   aria-label="Select all rows"
+                  className={someSelected && !allSelected ? "data-[state=checked]:bg-primary/50" : ""}
                 />
               </th>
             )}
