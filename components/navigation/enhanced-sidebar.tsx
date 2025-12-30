@@ -26,6 +26,8 @@ import {
   Calendar,
   TrendingUp,
   Tags,
+  ArrowRightLeft,
+  Ship,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -110,9 +112,33 @@ const navigation: NavItem[] = [
         iconColor: 'text-emerald-600 dark:text-emerald-400',
       },
       {
+        title: 'Transfer Orders',
+        href: '/dashboard/transfer-orders',
+        icon: ArrowRightLeft,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+      },
+      {
+        title: 'Containers',
+        href: '/dashboard/containers',
+        icon: Ship,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+      },
+      {
         title: 'Movements',
         href: '/dashboard/inventory',
         icon: BarChart3,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+      },
+      {
+        title: 'Items to Transfer',
+        href: '/dashboard/reports/items-to-transfer',
+        icon: FileSearch,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+      },
+      {
+        title: 'Inventory in Transit',
+        href: '/dashboard/reports/inventory-in-transit',
+        icon: Ship,
         iconColor: 'text-emerald-600 dark:text-emerald-400',
       },
     ],

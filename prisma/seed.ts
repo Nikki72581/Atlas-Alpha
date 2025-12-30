@@ -1,4 +1,4 @@
-import { PrismaClient, AccountType, ItemType, InventoryTxnType, JournalStatus, TransferOrderStatus } from "@prisma/client"
+import { PrismaClient, AccountType, ItemType, InventoryTxnType, JournalStatus, TransferOrderStatus, ContainerStatus } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
@@ -253,6 +253,29 @@ async function main() {
     },
   })
 
+  // Create a container for ocean freight (ATL → STT)
+  const container = await prisma.container.upsert({
+    where: { organizationId_containerNumber: { organizationId: org.id, containerNumber: "CONT-001" } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      containerNumber: "CONT-001",
+      containerType: "40FT_FCL",
+      status: ContainerStatus.PLANNED,
+      originWarehouseId: whATL.id,
+      destWarehouseId: whSTT.id,
+      carrier: "Matson Navigation",
+      vesselName: "MV Island Princess",
+      bookingNumber: "MTN-2025-001",
+      plannedLoadDate: new Date('2025-01-15'),
+      plannedDepartDate: new Date('2025-01-16'),
+      plannedArrivalDate: new Date('2025-01-30'),
+      plannedUnloadDate: new Date('2025-01-31'),
+      estimatedTransitDays: 14,
+      notes: "Weekly container shipment to St Thomas",
+    },
+  })
+
   // Create reorder points for STT (stocked items)
   await prisma.reorderPoint.upsert({
     where: {
@@ -346,6 +369,7 @@ async function main() {
   console.log("Seeded org:", org.name)
   console.log("Warehouses: ATL, STT, STX")
   console.log("Transfer Order:", to.transferOrderNumber)
+  console.log("Container:", container.containerNumber)
   console.log("Journal:", je.journalNo)
 }
 

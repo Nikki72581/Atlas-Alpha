@@ -29,6 +29,8 @@ model Organization {
   warehouses            Warehouse[]
   transferOrders        TransferOrder[]
   reorderPoints         ReorderPoint[]
+  containers            Container[]
+  shipments             Shipment[]
 }
 
 model User {
@@ -123,10 +125,14 @@ model Warehouse {
   inventoryBalances  InventoryBalance[]
   purchaseOrderLines PurchaseOrderLine[]
   salesOrderLines    SalesOrderLine[]
-  reorderPoints      ReorderPoint[]
-  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  transferOrdersFrom TransferOrder[]        @relation("TransferOrderFrom")
-  transferOrdersTo   TransferOrder[]        @relation("TransferOrderTo")
+  reorderPoints         ReorderPoint[]
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transferOrdersFrom    TransferOrder[]        @relation("TransferOrderFrom")
+  transferOrdersTo      TransferOrder[]        @relation("TransferOrderTo")
+  containersOrigin      Container[]            @relation("ContainerOrigin")
+  containersDestination Container[]            @relation("ContainerDestination")
+  shipmentsOrigin       Shipment[]             @relation("ShipmentOrigin")
+  shipmentsDestination  Shipment[]             @relation("ShipmentDestination")
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -338,12 +344,16 @@ model TransferOrder {
   actualReceiptDate   DateTime?
   shippingMethod      String?
   referenceNumber     String?
+  containerId         String?
+  shipmentId          String?
   notes               String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   fromWarehouse       Warehouse           @relation("TransferOrderFrom", fields: [fromWarehouseId], references: [id])
   toWarehouse         Warehouse           @relation("TransferOrderTo", fields: [toWarehouseId], references: [id])
+  container           Container?          @relation(fields: [containerId], references: [id])
+  shipment            Shipment?           @relation(fields: [shipmentId], references: [id])
   lines               TransferOrderLine[]
 
   @@unique([organizationId, transferOrderNumber])
@@ -351,6 +361,8 @@ model TransferOrder {
   @@index([status])
   @@index([fromWarehouseId])
   @@index([toWarehouseId])
+  @@index([containerId])
+  @@index([shipmentId])
   @@map("transfer_orders")
 }
 
@@ -395,6 +407,75 @@ model ReorderPoint {
   @@unique([organizationId, itemId, warehouseId])
   @@index([organizationId])
   @@map("reorder_points")
+}
+
+model Container {
+  id                  String           @id @default(cuid())
+  organizationId      String
+  containerNumber     String
+  containerType       String           @default("40FT_FCL")
+  status              ContainerStatus  @default(PLANNED)
+  originWarehouseId   String
+  destWarehouseId     String
+  carrier             String?
+  vesselName          String?
+  voyageNumber        String?
+  bookingNumber       String?
+  sealNumber          String?
+  plannedLoadDate     DateTime?
+  actualLoadDate      DateTime?
+  plannedDepartDate   DateTime?
+  actualDepartDate    DateTime?
+  plannedArrivalDate  DateTime?
+  actualArrivalDate   DateTime?
+  plannedUnloadDate   DateTime?
+  actualUnloadDate    DateTime?
+  estimatedTransitDays Int?
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  organization        Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  originWarehouse     Warehouse        @relation("ContainerOrigin", fields: [originWarehouseId], references: [id])
+  destWarehouse       Warehouse        @relation("ContainerDestination", fields: [destWarehouseId], references: [id])
+  transferOrders      TransferOrder[]
+
+  @@unique([organizationId, containerNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([originWarehouseId])
+  @@index([destWarehouseId])
+  @@map("containers")
+}
+
+model Shipment {
+  id                  String          @id @default(cuid())
+  organizationId      String
+  shipmentNumber      String
+  shipmentType        String          @default("OCEAN_FCL")
+  status              ShipmentStatus  @default(PLANNED)
+  originWarehouseId   String
+  destWarehouseId     String
+  carrier             String?
+  trackingNumber      String?
+  plannedShipDate     DateTime?
+  actualShipDate      DateTime?
+  plannedDeliveryDate DateTime?
+  actualDeliveryDate  DateTime?
+  estimatedTransitDays Int?
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  originWarehouse     Warehouse       @relation("ShipmentOrigin", fields: [originWarehouseId], references: [id])
+  destWarehouse       Warehouse       @relation("ShipmentDestination", fields: [destWarehouseId], references: [id])
+  transferOrders      TransferOrder[]
+
+  @@unique([organizationId, shipmentNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([originWarehouseId])
+  @@index([destWarehouseId])
+  @@map("shipments")
 }
 
 enum ItemType {
@@ -444,6 +525,24 @@ enum TransferOrderStatus {
   SHIPPED
   PARTIALLY_RECEIVED
   RECEIVED
+  CANCELLED
+}
+
+enum ContainerStatus {
+  PLANNED
+  LOADING
+  LOADED
+  IN_TRANSIT
+  ARRIVED
+  UNLOADING
+  UNLOADED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  PLANNED
+  IN_TRANSIT
+  DELIVERED
   CANCELLED
 }
 
