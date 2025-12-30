@@ -18,6 +18,7 @@ model Organization {
   dimensionDefinitions  DimensionDefinition[]
   dimensionValues       DimensionValue[]
   inventoryTxns         InventoryTransaction[]
+  inventoryBalances     InventoryBalance[]
   items                 Item[]
   journals              JournalEntry[]
   periods               Period[]
@@ -26,6 +27,8 @@ model Organization {
   users                 User[]
   vendors               Vendor[]
   warehouses            Warehouse[]
+  transferOrders        TransferOrder[]
+  reorderPoints         ReorderPoint[]
 }
 
 model User {
@@ -84,13 +87,17 @@ model Item {
   uom                String                 @default("EA")
   salesPrice         Decimal                @default(0)
   purchaseCost       Decimal                @default(0)
+  isStocked          Boolean                @default(false)
   isActive           Boolean                @default(true)
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
   inventoryTxns      InventoryTransaction[]
+  inventoryBalances  InventoryBalance[]
   organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   purchaseOrderLines PurchaseOrderLine[]
   salesOrderLines    SalesOrderLine[]
+  reorderPoints      ReorderPoint[]
+  transferOrderLines TransferOrderLine[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -101,12 +108,25 @@ model Warehouse {
   organizationId     String
   code               String
   name               String
+  addressLine1       String?
+  addressLine2       String?
+  city               String?
+  state              String?
+  postalCode         String?
+  country            String?                @default("US")
+  warehouseType      String?
+  islandCode         String?
+  isActive           Boolean                @default(true)
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
   inventoryTxns      InventoryTransaction[]
+  inventoryBalances  InventoryBalance[]
   purchaseOrderLines PurchaseOrderLine[]
   salesOrderLines    SalesOrderLine[]
+  reorderPoints      ReorderPoint[]
   organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transferOrdersFrom TransferOrder[]        @relation("TransferOrderFrom")
+  transferOrdersTo   TransferOrder[]        @relation("TransferOrderTo")
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -281,6 +301,102 @@ model Period {
   @@index([status])
 }
 
+model InventoryBalance {
+  id             String      @id @default(cuid())
+  organizationId String
+  itemId         String
+  warehouseId    String
+  onHandQty      Decimal     @default(0)
+  allocatedQty   Decimal     @default(0)
+  availableQty   Decimal     @default(0)
+  inTransitQty   Decimal     @default(0)
+  unitCost       Decimal?
+  totalValue     Decimal?
+  lastUpdated    DateTime    @updatedAt
+  createdAt      DateTime    @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item           Item        @relation(fields: [itemId], references: [id])
+  warehouse      Warehouse   @relation(fields: [warehouseId], references: [id])
+
+  @@unique([organizationId, itemId, warehouseId])
+  @@index([organizationId, itemId])
+  @@index([warehouseId])
+  @@map("inventory_balances")
+}
+
+model TransferOrder {
+  id                  String              @id @default(cuid())
+  organizationId      String
+  transferOrderNumber String
+  status              TransferOrderStatus @default(DRAFT)
+  fromWarehouseId     String
+  toWarehouseId       String
+  orderDate           DateTime            @default(now())
+  requestedShipDate   DateTime?
+  actualShipDate      DateTime?
+  expectedReceiptDate DateTime?
+  actualReceiptDate   DateTime?
+  shippingMethod      String?
+  referenceNumber     String?
+  notes               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fromWarehouse       Warehouse           @relation("TransferOrderFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse         Warehouse           @relation("TransferOrderTo", fields: [toWarehouseId], references: [id])
+  lines               TransferOrderLine[]
+
+  @@unique([organizationId, transferOrderNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@map("transfer_orders")
+}
+
+model TransferOrderLine {
+  id              String        @id @default(cuid())
+  transferOrderId String
+  lineNumber      Int
+  itemId          String
+  orderedQty      Decimal
+  shippedQty      Decimal       @default(0)
+  receivedQty     Decimal       @default(0)
+  uom             String        @default("EA")
+  unitCost        Decimal?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transferOrder   TransferOrder @relation(fields: [transferOrderId], references: [id], onDelete: Cascade)
+  item            Item          @relation(fields: [itemId], references: [id])
+
+  @@unique([transferOrderId, lineNumber])
+  @@index([itemId])
+  @@map("transfer_order_lines")
+}
+
+model ReorderPoint {
+  id             String       @id @default(cuid())
+  organizationId String
+  itemId         String
+  warehouseId    String
+  minQty         Decimal
+  maxQty         Decimal
+  safetyStock    Decimal      @default(0)
+  reorderQty     Decimal
+  leadTimeDays   Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item           Item         @relation(fields: [itemId], references: [id])
+  warehouse      Warehouse    @relation(fields: [warehouseId], references: [id])
+
+  @@unique([organizationId, itemId, warehouseId])
+  @@index([organizationId])
+  @@map("reorder_points")
+}
+
 enum ItemType {
   STOCK
   NON_STOCK
@@ -320,6 +436,15 @@ enum PeriodStatus {
   OPEN
   CLOSED
   LOCKED
+}
+
+enum TransferOrderStatus {
+  DRAFT
+  RELEASED
+  SHIPPED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
 }
 
 enum DimensionType {
