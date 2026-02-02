@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { DEMO_ORG_ID } from "@/lib/demo-org"
 import { TransferOrderStatus } from "@prisma/client"
 

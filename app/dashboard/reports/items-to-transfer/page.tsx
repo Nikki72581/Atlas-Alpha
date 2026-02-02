@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import prisma from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { DEMO_ORG_ID } from "@/lib/demo-org"
 import { Plus, AlertCircle } from "lucide-react"
 import Link from "next/link"
@@ -60,11 +60,11 @@ export default async function ItemsToTransferPage() {
 
   for (const so of salesOrders) {
     for (const line of so.lines) {
-      // Skip if line is for Atlanta warehouse (no transfer needed)
-      if (line.warehouse.code === 'ATL') continue
+      // Skip if line is for Atlanta warehouse (no transfer needed) or missing required data
+      if (!line.warehouse || !line.warehouseId || !line.item || !line.itemId || line.warehouse.code === 'ATL') continue
 
       // Find existing need for this item + destination
-      const warehouseNeeds = transferNeedsByWarehouse.get(line.warehouseId) || []
+      const warehouseNeeds = transferNeedsByWarehouse.get(line.warehouseId!) || []
       const existingNeed = warehouseNeeds.find(n => n.itemId === line.itemId)
 
       // Get available qty from Atlanta
@@ -80,20 +80,20 @@ export default async function ItemsToTransferPage() {
       } else {
         // Create new need
         warehouseNeeds.push({
-          itemId: line.itemId,
-          itemSku: line.item.sku,
-          itemName: line.item.name,
-          destinationWarehouseId: line.warehouseId,
-          destinationWarehouseName: line.warehouse.name,
-          destinationWarehouseCode: line.warehouse.code,
+          itemId: line.itemId!,
+          itemSku: line.item!.sku,
+          itemName: line.item!.name,
+          destinationWarehouseId: line.warehouseId!,
+          destinationWarehouseName: line.warehouse!.name,
+          destinationWarehouseCode: line.warehouse!.code,
           qtyNeeded: Number(line.quantity),
           qtyAvailableAtl,
           salesOrderNumbers: [so.orderNo],
-          uom: line.item.uom
+          uom: line.item!.uom
         })
       }
 
-      transferNeedsByWarehouse.set(line.warehouseId, warehouseNeeds)
+      transferNeedsByWarehouse.set(line.warehouseId!, warehouseNeeds)
     }
   }
 

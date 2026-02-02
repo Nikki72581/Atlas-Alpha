@@ -9,15 +9,11 @@ import {
   Users,
   FolderKanban,
   DollarSign,
-  CheckCircle,
   CreditCard,
   FileText,
   BarChart3,
-  User,
   Settings,
-  Shield,
   FileSearch,
-  HelpCircle,
   ChevronDown,
   ChevronRight,
   Database,
@@ -28,6 +24,8 @@ import {
   Tags,
   ArrowRightLeft,
   Ship,
+  Hexagon,
+  AlertCircle,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -41,160 +39,155 @@ interface NavItem {
   children?: NavItem[]
   adminOnly?: boolean
   salesPersonOnly?: boolean
-  iconColor?: string
-  sectionColor?: string
+  module?: 'sales' | 'purchase' | 'inventory' | 'finance' | 'default'
 }
 
-// Navigation structure
+// Navigation structure with module assignments
 const navigation: NavItem[] = [
   {
-    title: 'Dashboard',
+    title: 'Command Center',
     href: '/dashboard',
     icon: LayoutDashboard,
-    iconColor: 'text-blue-600 dark:text-blue-400',
+    module: 'default',
   },
   {
     title: 'Order to Cash',
     icon: ShoppingCart,
-    iconColor: 'text-purple-600 dark:text-purple-400',
-    sectionColor: 'border-purple-500/30',
+    module: 'sales',
     children: [
       {
         title: 'Customers',
         href: '/dashboard/customers',
         icon: Users,
-        iconColor: 'text-purple-600 dark:text-purple-400',
+        module: 'sales',
       },
       {
         title: 'Sales Orders',
         href: '/dashboard/sales-orders',
         icon: FileText,
-        iconColor: 'text-purple-600 dark:text-purple-400',
+        module: 'sales',
       },
     ],
   },
   {
     title: 'Procure to Pay',
     icon: CreditCard,
-    iconColor: 'text-amber-600 dark:text-amber-400',
-    sectionColor: 'border-amber-500/30',
+    module: 'purchase',
     children: [
       {
         title: 'Vendors',
         href: '/dashboard/vendors',
         icon: Users,
-        iconColor: 'text-amber-600 dark:text-amber-400',
+        module: 'purchase',
       },
       {
         title: 'Purchase Orders',
         href: '/dashboard/purchase-orders',
         icon: Receipt,
-        iconColor: 'text-amber-600 dark:text-amber-400',
+        module: 'purchase',
       },
     ],
   },
   {
     title: 'Inventory',
     icon: Database,
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
-    sectionColor: 'border-emerald-500/30',
+    module: 'inventory',
     children: [
       {
         title: 'Items',
         href: '/dashboard/items',
         icon: Database,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
       {
         title: 'Warehouses',
         href: '/dashboard/warehouses',
         icon: FolderKanban,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
       {
         title: 'Transfer Orders',
         href: '/dashboard/transfer-orders',
         icon: ArrowRightLeft,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
       {
         title: 'Containers',
         href: '/dashboard/containers',
         icon: Ship,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
       {
         title: 'Movements',
         href: '/dashboard/inventory',
         icon: BarChart3,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
       {
         title: 'Items to Transfer',
         href: '/dashboard/reports/items-to-transfer',
         icon: FileSearch,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
       {
         title: 'Inventory in Transit',
         href: '/dashboard/reports/inventory-in-transit',
         icon: Ship,
-        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        module: 'inventory',
       },
     ],
   },
   {
     title: 'Finance',
     icon: DollarSign,
-    iconColor: 'text-slate-700 dark:text-slate-200',
-    sectionColor: 'border-slate-500/30',
+    module: 'finance',
     children: [
       {
         title: 'Chart of Accounts',
         href: '/dashboard/finance/accounts',
         icon: BookOpen,
-        iconColor: 'text-slate-700 dark:text-slate-200',
+        module: 'finance',
       },
       {
         title: 'Journal Entries',
         href: '/dashboard/finance/journals',
         icon: FileText,
-        iconColor: 'text-slate-700 dark:text-slate-200',
+        module: 'finance',
       },
       {
         title: 'Accounting Periods',
         href: '/dashboard/finance/periods',
         icon: Calendar,
-        iconColor: 'text-slate-700 dark:text-slate-200',
+        module: 'finance',
       },
       {
         title: 'Dimensions',
         href: '/dashboard/finance/dimensions',
         icon: Tags,
-        iconColor: 'text-slate-700 dark:text-slate-200',
+        module: 'finance',
       },
       {
         title: 'Reports',
         icon: TrendingUp,
-        iconColor: 'text-slate-700 dark:text-slate-200',
+        module: 'finance',
         children: [
           {
             title: 'Trial Balance',
             href: '/dashboard/finance/reports/trial-balance',
             icon: BarChart3,
-            iconColor: 'text-slate-600 dark:text-slate-300',
+            module: 'finance',
           },
           {
             title: 'Balance Sheet',
             href: '/dashboard/finance/reports/balance-sheet',
             icon: FileText,
-            iconColor: 'text-slate-600 dark:text-slate-300',
+            module: 'finance',
           },
           {
             title: 'Income Statement',
             href: '/dashboard/finance/reports/income-statement',
             icon: TrendingUp,
-            iconColor: 'text-slate-600 dark:text-slate-300',
+            module: 'finance',
           },
         ],
       },
@@ -204,10 +197,43 @@ const navigation: NavItem[] = [
     title: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
-    iconColor: 'text-slate-700 dark:text-slate-200',
+    module: 'default',
   },
 ]
 
+// Module color classes using the new design system
+const moduleColors = {
+  sales: {
+    icon: 'text-[oklch(0.55_0.18_320)] dark:text-[oklch(0.72_0.16_320)]',
+    bg: 'bg-[oklch(0.55_0.18_320/0.08)] dark:bg-[oklch(0.68_0.18_320/0.12)]',
+    border: 'border-l-[oklch(0.55_0.18_320)] dark:border-l-[oklch(0.68_0.18_320)]',
+    activeBg: 'bg-[oklch(0.55_0.18_320/0.12)] dark:bg-[oklch(0.68_0.18_320/0.18)]',
+  },
+  purchase: {
+    icon: 'text-[oklch(0.58_0.14_55)] dark:text-[oklch(0.74_0.12_55)]',
+    bg: 'bg-[oklch(0.58_0.14_55/0.08)] dark:bg-[oklch(0.70_0.14_55/0.12)]',
+    border: 'border-l-[oklch(0.58_0.14_55)] dark:border-l-[oklch(0.70_0.14_55)]',
+    activeBg: 'bg-[oklch(0.58_0.14_55/0.12)] dark:bg-[oklch(0.70_0.14_55/0.18)]',
+  },
+  inventory: {
+    icon: 'text-[oklch(0.52_0.14_165)] dark:text-[oklch(0.66_0.12_165)]',
+    bg: 'bg-[oklch(0.52_0.14_165/0.08)] dark:bg-[oklch(0.62_0.14_165/0.12)]',
+    border: 'border-l-[oklch(0.52_0.14_165)] dark:border-l-[oklch(0.62_0.14_165)]',
+    activeBg: 'bg-[oklch(0.52_0.14_165/0.12)] dark:bg-[oklch(0.62_0.14_165/0.18)]',
+  },
+  finance: {
+    icon: 'text-[oklch(0.45_0.08_250)] dark:text-[oklch(0.64_0.08_250)]',
+    bg: 'bg-[oklch(0.45_0.08_250/0.08)] dark:bg-[oklch(0.60_0.10_250/0.12)]',
+    border: 'border-l-[oklch(0.45_0.08_250)] dark:border-l-[oklch(0.60_0.10_250)]',
+    activeBg: 'bg-[oklch(0.45_0.08_250/0.12)] dark:bg-[oklch(0.60_0.10_250/0.18)]',
+  },
+  default: {
+    icon: 'text-[oklch(0.35_0.08_195)] dark:text-[oklch(0.70_0.10_195)]',
+    bg: 'bg-[oklch(0.35_0.08_195/0.06)] dark:bg-[oklch(0.70_0.10_195/0.10)]',
+    border: 'border-l-[oklch(0.35_0.08_195)] dark:border-l-[oklch(0.70_0.10_195)]',
+    activeBg: 'bg-[oklch(0.35_0.08_195/0.10)] dark:bg-[oklch(0.70_0.10_195/0.15)]',
+  },
+}
 
 interface EnhancedSidebarProps {
   userRole?: 'ADMIN' | 'SALESPERSON'
@@ -256,11 +282,13 @@ export function EnhancedSidebar({
 
   const isActive = (href?: string) => {
     if (!href) return false
-    // Exact match for dashboard
     if (href === '/dashboard' && pathname === '/dashboard') return true
-    // Starts with match for other pages
     if (href !== '/dashboard' && pathname.startsWith(href)) return true
     return false
+  }
+
+  const getModuleColors = (module?: string) => {
+    return moduleColors[module as keyof typeof moduleColors] || moduleColors.default
   }
 
   const renderNavItem = (item: NavItem, level: number = 0) => {
@@ -271,39 +299,45 @@ export function EnhancedSidebar({
     const isExpanded = expandedSections.includes(item.title)
     const active = isActive(item.href)
     const badgeValue = getBadgeValue(item.badge)
+    const colors = getModuleColors(item.module)
 
     // Section with children
     if (hasChildren) {
       return (
-        <div key={item.title}>
+        <div key={item.title} className="space-y-0.5">
           <button
             onClick={() => toggleSection(item.title)}
             className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent/50',
+              'group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',
+              'hover:bg-accent/60',
               level > 0 && 'pl-9'
             )}
           >
-            <Icon className={cn('h-4 w-4 transition-colors', item.iconColor)} />
+            <div className={cn('rounded-md p-1.5 transition-colors', colors.bg)}>
+              <Icon className={cn('h-4 w-4', colors.icon)} />
+            </div>
             <span className="flex-1 text-left font-medium">{item.title}</span>
             {badgeValue && (
               <Badge variant={item.badgeVariant || 'default'} className="ml-auto">
                 {badgeValue}
               </Badge>
             )}
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                !isExpanded && '-rotate-90'
+              )}
+            />
           </button>
-          {isExpanded && (
-            <div className={cn(
-              'ml-3 mt-1 space-y-1 border-l pl-3',
-              item.sectionColor || 'border-border'
-            )}>
-              {item.children?.map((child) => renderNavItem(child, level + 1))}
-            </div>
-          )}
+          <div
+            className={cn(
+              'ml-4 space-y-0.5 border-l-2 pl-3 overflow-hidden transition-all duration-200',
+              colors.border,
+              isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            )}
+          >
+            {item.children?.map((child) => renderNavItem(child, level + 1))}
+          </div>
         </div>
       )
     }
@@ -314,13 +348,28 @@ export function EnhancedSidebar({
         key={item.title}
         href={item.href!}
         className={cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent/50',
-          active && 'bg-gradient-to-r from-accent to-accent/50 font-medium text-accent-foreground shadow-sm',
-          level > 0 && 'pl-9'
+          'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200',
+          'hover:bg-accent/60',
+          active && cn(colors.activeBg, 'shadow-sm'),
+          level > 0 && 'pl-3'
         )}
       >
-        <Icon className={cn('h-4 w-4 transition-colors', item.iconColor, active && 'scale-110')} />
-        <span className="flex-1">{item.title}</span>
+        <div
+          className={cn(
+            'rounded-md p-1.5 transition-all duration-200',
+            active ? colors.bg : 'bg-transparent group-hover:bg-accent/50',
+            level > 0 && 'p-1'
+          )}
+        >
+          <Icon
+            className={cn(
+              'transition-all duration-200',
+              level > 0 ? 'h-3.5 w-3.5' : 'h-4 w-4',
+              active ? colors.icon : 'text-muted-foreground group-hover:text-foreground'
+            )}
+          />
+        </div>
+        <span className={cn('flex-1', active && 'font-medium')}>{item.title}</span>
         {badgeValue && (
           <Badge variant={item.badgeVariant || 'default'}>
             {badgeValue}
@@ -331,20 +380,31 @@ export function EnhancedSidebar({
   }
 
   return (
-    <div className="flex h-full flex-col gap-2">
-      {/* Organization & User Info Header */}
+    <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
+      {/* Brand Header */}
+      <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+          <Hexagon className="h-5 w-5 text-primary" strokeWidth={1.5} />
+        </div>
+        <div className="flex flex-col">
+          <span className="font-display text-lg tracking-tight">Atlas</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Alpha</span>
+        </div>
+      </div>
+
+      {/* Organization & User Info */}
       {(organizationName || userName) && (
-        <div className="border-b border-border/50 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 p-4">
-          <div className="space-y-2">
+        <div className="border-b border-sidebar-border px-4 py-3">
+          <div className="space-y-1.5">
             {organizationName && (
-              <p className="text-sm font-semibold truncate bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">{organizationName}</p>
+              <p className="text-sm font-medium truncate">{organizationName}</p>
             )}
             {userName && (
               <p className="text-xs text-muted-foreground truncate">{userName}</p>
             )}
             <Badge
-              variant={userRole === 'ADMIN' ? 'default' : 'info'}
-              className="w-fit text-xs"
+              variant={userRole === 'ADMIN' ? 'default' : 'secondary'}
+              className="text-[10px] uppercase tracking-wider"
             >
               {userRole}
             </Badge>
@@ -352,32 +412,53 @@ export function EnhancedSidebar({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto py-2">
-        <nav className="space-y-1 px-2">
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-3">
+        <nav className="space-y-1 px-3">
           {navigation.map((item) => renderNavItem(item))}
         </nav>
       </div>
 
-      {/* Quick Stats */}
+      {/* Action Required Section */}
       {userRole === 'ADMIN' && (pendingCount > 0 || unpaidCount > 0) && (
-        <div className="border-t border-border/50 bg-gradient-to-br from-amber-500/5 via-transparent to-red-500/5 p-4">
-          <p className="text-xs font-semibold text-muted-foreground mb-3">Action Required</p>
-          <div className="space-y-2 text-sm">
-            {pendingCount > 0 && (
-              <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2 hover:bg-amber-500/20 transition-colors">
-                <span className="text-amber-900 dark:text-amber-100 font-medium">Pending Approval</span>
-                <Badge variant="warning">{pendingCount}</Badge>
-              </div>
-            )}
-            {unpaidCount > 0 && (
-              <div className="flex items-center justify-between rounded-lg bg-blue-500/10 px-3 py-2 hover:bg-blue-500/20 transition-colors">
-                <span className="text-blue-900 dark:text-blue-100 font-medium">Unpaid</span>
-                <Badge variant="info">{unpaidCount}</Badge>
-              </div>
-            )}
+        <div className="border-t border-sidebar-border p-3">
+          <div className="rounded-lg bg-[oklch(0.55_0.22_25/0.06)] dark:bg-[oklch(0.60_0.20_25/0.10)] p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-3.5 w-3.5 text-[oklch(0.50_0.20_25)]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[oklch(0.45_0.18_25)] dark:text-[oklch(0.70_0.15_25)]">
+                Action Required
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {pendingCount > 0 && (
+                <Link
+                  href="/dashboard/sales-orders?status=PENDING"
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[oklch(0.55_0.22_25/0.08)]"
+                >
+                  <span className="text-xs">Pending Approval</span>
+                  <Badge variant="warning" className="text-[10px]">{pendingCount}</Badge>
+                </Link>
+              )}
+              {unpaidCount > 0 && (
+                <Link
+                  href="/dashboard/finance/reports"
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[oklch(0.55_0.12_230/0.08)]"
+                >
+                  <span className="text-xs">Unpaid Items</span>
+                  <Badge variant="info" className="text-[10px]">{unpaidCount}</Badge>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}
-    </div>
+
+      {/* Footer */}
+      <div className="border-t border-sidebar-border px-4 py-3">
+        <p className="text-[10px] text-muted-foreground/60">
+          Atlas Alpha v0.1 · Distribution ERP
+        </p>
+      </div>
+    </aside>
   )
 }

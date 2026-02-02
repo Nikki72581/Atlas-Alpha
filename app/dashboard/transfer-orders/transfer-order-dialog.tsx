@@ -44,7 +44,7 @@ const transferOrderSchema = z.object({
   lines: z.array(z.object({
     itemId: z.string().min(1, "Item required"),
     orderedQty: z.number().positive("Quantity must be positive"),
-    uom: z.string().default("EA"),
+    uom: z.string().min(1),
     unitCost: z.number().optional(),
     notes: z.string().optional(),
   })).min(1, "At least one line required")
