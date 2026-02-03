@@ -277,10 +277,16 @@ export function ImportDialog({ open, onOpenChange, onImportComplete }: ImportDia
             <div className="space-y-2">
               <Label>CSV File</Label>
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center ${
+                className={`relative border-2 border-dashed rounded-lg p-8 text-center ${
                   fileName ? "border-green-300 bg-green-50" : "border-muted-foreground/25"
                 }`}
               >
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
                 {fileName ? (
                   <div className="space-y-2">
                     <CheckCircle2 className="h-8 w-8 mx-auto text-green-600" />
@@ -297,14 +303,7 @@ export function ImportDialog({ open, onOpenChange, onImportComplete }: ImportDia
                     </p>
                   </div>
                 )}
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileSelect}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  style={{ position: "relative" }}
-                />
-                <Button variant="outline" size="sm" className="mt-4">
+                <Button variant="outline" size="sm" className="mt-4 pointer-events-none">
                   {fileName ? "Change File" : "Select File"}
                 </Button>
               </div>
