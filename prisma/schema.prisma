@@ -31,6 +31,8 @@ model Organization {
   reorderPoints         ReorderPoint[]
   containers            Container[]
   shipments             Shipment[]
+  bankAccounts          BankAccount[]
+  categoryRules         CategoryRule[]
 }
 
 model User {
@@ -235,16 +237,19 @@ model InventoryTransaction {
 }
 
 model Account {
-  id             String        @id @default(cuid())
-  organizationId String
-  number         String
-  name           String
-  type           AccountType
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  journalLines   JournalLine[]
+  id                   String            @id @default(cuid())
+  organizationId       String
+  number               String
+  name                 String
+  type                 AccountType
+  isActive             Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  journalLines         JournalLine[]
+  bankAccounts         BankAccount[]
+  bankTransactionCategories BankTransaction[] @relation("BankTransactionCategory")
+  categoryRules        CategoryRule[]    @relation("CategoryRuleAccount")
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -546,6 +551,25 @@ enum ShipmentStatus {
   CANCELLED
 }
 
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  MONEY_MARKET
+  CREDIT_CARD
+}
+
+enum BankTransactionStatus {
+  PENDING       // Imported, not categorized
+  CATEGORIZED   // Category assigned
+  RECONCILED    // Matched to GL entry
+  EXCLUDED      // Excluded from reconciliation
+}
+
+enum BankTransactionType {
+  DEBIT         // Money out
+  CREDIT        // Money in
+}
+
 enum DimensionType {
   DEPARTMENT
   PROJECT
@@ -591,4 +615,76 @@ model DimensionValue {
   @@unique([dimensionDefinitionId, code])
   @@index([organizationId])
   @@index([dimensionDefinitionId])
+}
+
+model BankAccount {
+  id               String              @id @default(cuid())
+  organizationId   String
+  name             String
+  bankName         String?
+  accountNumber    String?
+  accountType      BankAccountType     @default(CHECKING)
+  glAccountId      String
+  currency         String              @default("USD")
+  isActive         Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  glAccount        Account             @relation(fields: [glAccountId], references: [id])
+  transactions     BankTransaction[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([glAccountId])
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id                String                @id @default(cuid())
+  bankAccountId     String
+  transactionDate   DateTime
+  description       String
+  amount            Decimal
+  transactionType   BankTransactionType
+  status            BankTransactionStatus @default(PENDING)
+  categoryAccountId String?
+  categoryRuleId    String?
+  memo              String?
+  importBatchId     String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  bankAccount       BankAccount           @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  categoryAccount   Account?              @relation("BankTransactionCategory", fields: [categoryAccountId], references: [id])
+  categoryRule      CategoryRule?         @relation(fields: [categoryRuleId], references: [id], onDelete: SetNull)
+
+  @@index([bankAccountId])
+  @@index([categoryAccountId])
+  @@index([categoryRuleId])
+  @@index([status])
+  @@index([transactionDate])
+  @@index([importBatchId])
+  @@map("bank_transactions")
+}
+
+model CategoryRule {
+  id                String            @id @default(cuid())
+  organizationId    String
+  name              String
+  pattern           String
+  patternType       String            @default("contains") // contains, startsWith, regex
+  categoryAccountId String
+  priority          Int               @default(0)
+  matchCount        Int               @default(0)
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryAccount   Account           @relation("CategoryRuleAccount", fields: [categoryAccountId], references: [id])
+  transactions      BankTransaction[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([categoryAccountId])
+  @@index([priority])
+  @@map("category_rules")
 }

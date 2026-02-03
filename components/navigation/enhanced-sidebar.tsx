@@ -26,6 +26,8 @@ import {
   Ship,
   Hexagon,
   AlertCircle,
+  Building2,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -152,6 +154,18 @@ const navigation: NavItem[] = [
         title: 'Journal Entries',
         href: '/dashboard/finance/journals',
         icon: FileText,
+        module: 'finance',
+      },
+      {
+        title: 'Bank Accounts',
+        href: '/dashboard/finance/bank-accounts',
+        icon: Building2,
+        module: 'finance',
+      },
+      {
+        title: 'Bank Transactions',
+        href: '/dashboard/finance/bank-transactions',
+        icon: ArrowLeftRight,
         module: 'finance',
       },
       {
