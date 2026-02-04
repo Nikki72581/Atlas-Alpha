@@ -256,18 +256,19 @@ model Account {
 }
 
 model JournalEntry {
-  id             String        @id @default(cuid())
-  organizationId String
-  journalNo      String
-  description    String?
-  postingDate    DateTime      @default(now())
-  status         JournalStatus @default(DRAFT)
-  periodId       String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  period         Period?       @relation(fields: [periodId], references: [id])
-  lines          JournalLine[]
+  id               String            @id @default(cuid())
+  organizationId   String
+  journalNo        String
+  description      String?
+  postingDate      DateTime          @default(now())
+  status           JournalStatus     @default(DRAFT)
+  periodId         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  period           Period?           @relation(fields: [periodId], references: [id])
+  lines            JournalLine[]
+  bankTransactions BankTransaction[]
 
   @@unique([organizationId, journalNo])
   @@index([organizationId])
@@ -649,6 +650,7 @@ model BankTransaction {
   status            BankTransactionStatus @default(PENDING)
   categoryAccountId String?
   categoryRuleId    String?
+  journalEntryId    String?
   memo              String?
   importBatchId     String?
   createdAt         DateTime              @default(now())
@@ -656,10 +658,12 @@ model BankTransaction {
   bankAccount       BankAccount           @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
   categoryAccount   Account?              @relation("BankTransactionCategory", fields: [categoryAccountId], references: [id])
   categoryRule      CategoryRule?         @relation(fields: [categoryRuleId], references: [id], onDelete: SetNull)
+  journalEntry      JournalEntry?         @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
 
   @@index([bankAccountId])
   @@index([categoryAccountId])
   @@index([categoryRuleId])
+  @@index([journalEntryId])
   @@index([status])
   @@index([transactionDate])
   @@index([importBatchId])

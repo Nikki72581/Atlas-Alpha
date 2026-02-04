@@ -5,12 +5,100 @@ import { DEMO_ORG_ID } from "@/lib/demo-org"
 import { revalidatePath } from "next/cache"
 import { BankTransactionStatus, BankTransactionType } from "@prisma/client"
 import { findMatchingRule, type CategoryRule as CategoryRuleType } from "@/lib/category-matcher"
+import { Decimal } from "@prisma/client/runtime/library"
 
 export type TransactionImportData = {
   date: Date
   description: string
   amount: number
   type: "DEBIT" | "CREDIT"
+}
+
+// Helper: get the next journal number for the organization
+async function getNextJournalNumber(): Promise<string> {
+  const lastJournal = await prisma.journalEntry.findFirst({
+    where: { organizationId: DEMO_ORG_ID },
+    orderBy: { journalNo: "desc" },
+  })
+
+  const lastNumber = lastJournal ? parseInt(lastJournal.journalNo.split("-")[1]) : 0
+  return `JE-${String(lastNumber + 1).padStart(4, "0")}`
+}
+
+// Helper: find the open period for a given date
+async function findPeriodForDate(date: Date): Promise<string | null> {
+  const period = await prisma.period.findFirst({
+    where: {
+      organizationId: DEMO_ORG_ID,
+      status: "OPEN",
+      startDate: { lte: date },
+      endDate: { gte: date },
+    },
+  })
+  return period?.id ?? null
+}
+
+// Create a double-entry journal entry for a categorized bank transaction
+async function createLedgerEntryForTransaction(txn: {
+  id: string
+  bankAccountId: string
+  amount: Decimal
+  transactionType: BankTransactionType
+  description: string
+  transactionDate: Date
+  categoryAccountId: string
+}): Promise<void> {
+  // Get the bank account's GL account
+  const bankAccount = await prisma.bankAccount.findUnique({
+    where: { id: txn.bankAccountId },
+    select: { glAccountId: true },
+  })
+
+  if (!bankAccount) return
+
+  const journalNo = await getNextJournalNumber()
+  const periodId = await findPeriodForDate(txn.transactionDate)
+  const absAmount = txn.amount.abs()
+
+  // Determine debit/credit lines based on transaction type
+  // DEBIT (money out): Debit category account, Credit bank GL account
+  // CREDIT (money in): Debit bank GL account, Credit category account
+  const isDebit = txn.transactionType === BankTransactionType.DEBIT
+
+  const journalEntry = await prisma.journalEntry.create({
+    data: {
+      organizationId: DEMO_ORG_ID,
+      journalNo,
+      description: txn.description,
+      postingDate: txn.transactionDate,
+      status: "DRAFT",
+      periodId,
+      lines: {
+        create: [
+          {
+            lineNo: 1,
+            accountId: isDebit ? txn.categoryAccountId : bankAccount.glAccountId,
+            debit: absAmount,
+            credit: 0,
+            memo: txn.description,
+          },
+          {
+            lineNo: 2,
+            accountId: isDebit ? bankAccount.glAccountId : txn.categoryAccountId,
+            debit: 0,
+            credit: absAmount,
+            memo: txn.description,
+          },
+        ],
+      },
+    },
+  })
+
+  // Link the journal entry to the bank transaction
+  await prisma.bankTransaction.update({
+    where: { id: txn.id },
+    data: { journalEntryId: journalEntry.id },
+  })
 }
 
 export async function importTransactions(
@@ -93,6 +181,20 @@ export async function importTransactions(
       )
     )
 
+    // Create ledger entries for auto-categorized transactions
+    const categorizedTxns = createdTransactions.filter(t => t.categoryAccountId)
+    for (const txn of categorizedTxns) {
+      await createLedgerEntryForTransaction({
+        id: txn.id,
+        bankAccountId: txn.bankAccountId,
+        amount: txn.amount,
+        transactionType: txn.transactionType,
+        description: txn.description,
+        transactionDate: txn.transactionDate,
+        categoryAccountId: txn.categoryAccountId!,
+      })
+    }
+
     revalidatePath("/dashboard/finance/bank-transactions")
 
     return {
@@ -133,6 +235,17 @@ export async function categorizeTransaction(
       },
     })
 
+    // Create ledger entry for the categorized transaction
+    await createLedgerEntryForTransaction({
+      id: transactionId,
+      bankAccountId: transaction.bankAccountId,
+      amount: transaction.amount,
+      transactionType: transaction.transactionType,
+      description: transaction.description,
+      transactionDate: transaction.transactionDate,
+      categoryAccountId,
+    })
+
     revalidatePath("/dashboard/finance/bank-transactions")
     return { success: true }
   } catch (error) {
@@ -154,6 +267,23 @@ export async function bulkCategorize(
         categoryRuleId: null,
       },
     })
+
+    // Fetch the updated transactions and create ledger entries
+    const transactions = await prisma.bankTransaction.findMany({
+      where: { id: { in: transactionIds } },
+    })
+
+    for (const txn of transactions) {
+      await createLedgerEntryForTransaction({
+        id: txn.id,
+        bankAccountId: txn.bankAccountId,
+        amount: txn.amount,
+        transactionType: txn.transactionType,
+        description: txn.description,
+        transactionDate: txn.transactionDate,
+        categoryAccountId,
+      })
+    }
 
     revalidatePath("/dashboard/finance/bank-transactions")
     return { success: true, updated: transactionIds.length }
@@ -318,6 +448,18 @@ export async function applyRulesToUncategorized(ruleId?: string) {
             status: BankTransactionStatus.CATEGORIZED,
           },
         })
+
+        // Create ledger entry for the categorized transaction
+        await createLedgerEntryForTransaction({
+          id: txn.id,
+          bankAccountId: txn.bankAccountId,
+          amount: txn.amount,
+          transactionType: txn.transactionType,
+          description: txn.description,
+          transactionDate: txn.transactionDate,
+          categoryAccountId: match.categoryAccountId,
+        })
+
         matchedCount++
         ruleMatchCounts[match.ruleId] = (ruleMatchCounts[match.ruleId] || 0) + 1
       }
