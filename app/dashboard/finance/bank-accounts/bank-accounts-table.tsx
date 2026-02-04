@@ -33,6 +33,7 @@ type BankAccount = {
   _count: {
     transactions: number
   }
+  ledgerBalance: number
 }
 
 type BankAccountsTableProps = {
@@ -180,6 +181,7 @@ export function BankAccountsTable({ bankAccounts }: BankAccountsTableProps) {
                 <Th>Bank</Th>
                 <Th>Type</Th>
                 <Th>GL Account</Th>
+                <Th className="text-right">Ledger Balance</Th>
                 <Th className="text-right">Transactions</Th>
                 <Th>Status</Th>
                 <Th className="text-right">Actions</Th>
@@ -208,6 +210,11 @@ export function BankAccountsTable({ bankAccounts }: BankAccountsTableProps) {
                   </Td>
                   <Td className="font-mono text-xs">
                     {account.glAccount.number} - {account.glAccount.name}
+                  </Td>
+                  <Td className="text-right font-mono text-sm">
+                    <span className={account.ledgerBalance < 0 ? "text-red-600" : ""}>
+                      ${account.ledgerBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                   </Td>
                   <Td className="text-right text-muted-foreground">
                     {account._count.transactions.toLocaleString()}
@@ -266,7 +273,7 @@ export function BankAccountsTable({ bankAccounts }: BankAccountsTableProps) {
               ))}
               {filteredAccounts.length === 0 && (
                 <Tr>
-                  <Td className="text-center text-muted-foreground" colSpan={7}>
+                  <Td className="text-center text-muted-foreground" colSpan={8}>
                     {searchQuery || typeFilter !== "all" || statusFilter !== "all"
                       ? "No bank accounts match your filters."
                       : "No bank accounts yet. Create one to start importing transactions."}

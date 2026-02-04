@@ -21,6 +21,34 @@ export default async function BankAccountsPage() {
     orderBy: { name: "asc" },
   })
 
+  // Compute ledger balance for each bank account's GL account
+  // Balance = sum(debits) - sum(credits) from POSTED journal entries
+  const glAccountIds = bankAccounts.map((ba) => ba.glAccountId)
+
+  const balances = await prisma.journalLine.groupBy({
+    by: ["accountId"],
+    where: {
+      accountId: { in: glAccountIds },
+      journalEntry: { status: "POSTED" },
+    },
+    _sum: {
+      debit: true,
+      credit: true,
+    },
+  })
+
+  const balanceMap = new Map(
+    balances.map((b) => [
+      b.accountId,
+      Number(b._sum.debit ?? 0) - Number(b._sum.credit ?? 0),
+    ])
+  )
+
+  const bankAccountsWithBalance = bankAccounts.map((ba) => ({
+    ...ba,
+    ledgerBalance: balanceMap.get(ba.glAccountId) ?? 0,
+  }))
+
   return (
     <div className="space-y-6">
       <div>
@@ -30,7 +58,7 @@ export default async function BankAccountsPage() {
         </p>
       </div>
 
-      <BankAccountsTable bankAccounts={bankAccounts} />
+      <BankAccountsTable bankAccounts={bankAccountsWithBalance} />
     </div>
   )
 }
