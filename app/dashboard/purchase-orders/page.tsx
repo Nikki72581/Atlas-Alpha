@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { DEMO_ORG_ID } from "@/lib/demo-org"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable, Td, Th, Tr } from "@/components/atlas/data-table"
+import { PurchaseOrderActions } from "./purchase-order-actions"
 
 export default async function PurchaseOrdersPage() {
   const orders = await prisma.purchaseOrder.findMany({
@@ -31,6 +32,7 @@ export default async function PurchaseOrdersPage() {
                 <Th>Status</Th>
                 <Th>Lines</Th>
                 <Th>Order Date</Th>
+                <Th className="w-[50px]"></Th>
               </tr>
             </thead>
             <tbody>
@@ -41,11 +43,14 @@ export default async function PurchaseOrdersPage() {
                   <Td className="text-muted-foreground">{o.status}</Td>
                   <Td className="text-muted-foreground">{o.lines.length}</Td>
                   <Td className="text-muted-foreground">{o.orderDate.toLocaleDateString()}</Td>
+                  <Td>
+                    <PurchaseOrderActions order={{ id: o.id, orderNo: o.orderNo, status: o.status }} />
+                  </Td>
                 </Tr>
               ))}
               {orders.length === 0 && (
                 <Tr>
-                  <Td className="text-muted-foreground" colSpan={5}>
+                  <Td className="text-muted-foreground" colSpan={6}>
                     No purchase orders yet.
                   </Td>
                 </Tr>
