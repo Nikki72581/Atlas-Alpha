@@ -64,6 +64,11 @@ type Transaction = {
     id: string
     name: string
   } | null
+  journalEntry: {
+    id: string
+    journalNo: string
+    status: "DRAFT" | "POSTED"
+  } | null
 }
 
 type BankAccount = {
@@ -371,9 +376,26 @@ export function TransactionsTable({ transactions, bankAccounts }: TransactionsTa
                   </Td>
                   <Td className="text-xs">
                     {txn.categoryAccount ? (
-                      <span className="text-muted-foreground">
-                        {txn.categoryAccount.number} - {txn.categoryAccount.name}
-                      </span>
+                      <div>
+                        <span className="text-muted-foreground">
+                          {txn.categoryAccount.number} - {txn.categoryAccount.name}
+                        </span>
+                        {txn.journalEntry && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-muted-foreground/70">{txn.journalEntry.journalNo}</span>
+                            <Badge
+                              variant="secondary"
+                              className={`text-[10px] px-1 py-0 leading-tight ${
+                                txn.journalEntry.status === "POSTED"
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                              }`}
+                            >
+                              {txn.journalEntry.status}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-muted-foreground/50">—</span>
                     )}

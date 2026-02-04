@@ -28,6 +28,13 @@ export default async function BankTransactionsPage() {
             name: true,
           },
         },
+        journalEntry: {
+          select: {
+            id: true,
+            journalNo: true,
+            status: true,
+          },
+        },
       },
       orderBy: { transactionDate: "desc" },
     }),
