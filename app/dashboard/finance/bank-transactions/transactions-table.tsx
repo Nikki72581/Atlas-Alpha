@@ -39,8 +39,9 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Receipt,
+  Calendar,
 } from "lucide-react"
-import { format } from "date-fns"
+import { format, startOfMonth, endOfMonth, subDays, subMonths, startOfYear } from "date-fns"
 import { useRouter } from "next/navigation"
 
 type Transaction = {
@@ -101,20 +102,55 @@ export function TransactionsTable({ transactions, bankAccounts }: TransactionsTa
   const [accountFilter, setAccountFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [dateFilter, setDateFilter] = useState<string>("all")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [categorizeDialogOpen, setCategorizeDialogOpen] = useState(false)
   const [transactionsToCategorize, setTransactionsToCategorize] = useState<Transaction[]>([])
 
+  const getDateRange = (filter: string): { start: Date | null; end: Date | null } => {
+    const today = new Date()
+    today.setHours(23, 59, 59, 999)
+
+    switch (filter) {
+      case "today":
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        return { start: todayStart, end: today }
+      case "last7":
+        return { start: subDays(today, 7), end: today }
+      case "last30":
+        return { start: subDays(today, 30), end: today }
+      case "thisMonth":
+        return { start: startOfMonth(today), end: endOfMonth(today) }
+      case "lastMonth":
+        const lastMonth = subMonths(today, 1)
+        return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) }
+      case "thisYear":
+        return { start: startOfYear(today), end: today }
+      default:
+        return { start: null, end: null }
+    }
+  }
+
   const filteredTransactions = useMemo(() => {
+    const dateRange = getDateRange(dateFilter)
+
     return transactions.filter((txn) => {
       const matchesSearch = txn.description.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesAccount = accountFilter === "all" || txn.bankAccount.id === accountFilter
       const matchesStatus = statusFilter === "all" || txn.status === statusFilter
       const matchesType = typeFilter === "all" || txn.transactionType === typeFilter
-      return matchesSearch && matchesAccount && matchesStatus && matchesType
+
+      let matchesDate = true
+      if (dateRange.start && dateRange.end) {
+        const txnDate = new Date(txn.transactionDate)
+        matchesDate = txnDate >= dateRange.start && txnDate <= dateRange.end
+      }
+
+      return matchesSearch && matchesAccount && matchesStatus && matchesType && matchesDate
     })
-  }, [transactions, searchQuery, accountFilter, statusFilter, typeFilter])
+  }, [transactions, searchQuery, accountFilter, statusFilter, typeFilter, dateFilter])
 
   const selectedTransactions = filteredTransactions.filter((t) => selectedIds.has(t.id))
   const allSelected = filteredTransactions.length > 0 && selectedIds.size === filteredTransactions.length
@@ -241,6 +277,22 @@ export function TransactionsTable({ transactions, bankAccounts }: TransactionsTa
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="DEBIT">Debits</SelectItem>
                 <SelectItem value="CREDIT">Credits</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-36">
+                <Calendar className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="last7">Last 7 Days</SelectItem>
+                <SelectItem value="last30">Last 30 Days</SelectItem>
+                <SelectItem value="thisMonth">This Month</SelectItem>
+                <SelectItem value="lastMonth">Last Month</SelectItem>
+                <SelectItem value="thisYear">This Year</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -439,7 +491,7 @@ export function TransactionsTable({ transactions, bankAccounts }: TransactionsTa
               {filteredTransactions.length === 0 && (
                 <Tr>
                   <Td className="text-center text-muted-foreground" colSpan={8}>
-                    {searchQuery || accountFilter !== "all" || statusFilter !== "all" || typeFilter !== "all"
+                    {searchQuery || accountFilter !== "all" || statusFilter !== "all" || typeFilter !== "all" || dateFilter !== "all"
                       ? "No transactions match your filters."
                       : "No transactions yet. Import a CSV file to get started."}
                   </Td>

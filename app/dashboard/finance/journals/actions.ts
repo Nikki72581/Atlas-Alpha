@@ -404,3 +404,102 @@ export async function getNextJournalNumber() {
     return { success: false, error: "Failed to get next journal number" }
   }
 }
+
+export async function bulkPostJournalEntries(ids: string[]) {
+  try {
+    // Get all journal entries to validate
+    const journals = await prisma.journalEntry.findMany({
+      where: { id: { in: ids } },
+      include: { lines: true, period: true },
+    })
+
+    // Check for any that are already posted
+    const alreadyPosted = journals.filter((j) => j.status === "POSTED")
+    if (alreadyPosted.length > 0) {
+      return {
+        success: false,
+        error: `${alreadyPosted.length} journal(s) are already posted: ${alreadyPosted.map((j) => j.journalNo).join(", ")}`,
+      }
+    }
+
+    // Check for closed/locked periods
+    for (const journal of journals) {
+      if (journal.period) {
+        if (journal.period.status === "CLOSED") {
+          return {
+            success: false,
+            error: `Cannot post ${journal.journalNo} to closed period: ${journal.period.name}`,
+          }
+        }
+        if (journal.period.status === "LOCKED") {
+          return {
+            success: false,
+            error: `Cannot post ${journal.journalNo} to locked period: ${journal.period.name}`,
+          }
+        }
+      }
+    }
+
+    // Validate all journals
+    for (const journal of journals) {
+      const lines = journal.lines.map((line) => ({
+        lineNo: line.lineNo,
+        accountId: line.accountId,
+        debit: Number(line.debit),
+        credit: Number(line.credit),
+        memo: line.memo || undefined,
+      }))
+
+      const lineValidation = validateLines(lines)
+      if (!lineValidation.valid) {
+        return { success: false, error: `${journal.journalNo}: ${lineValidation.message}` }
+      }
+
+      const balanceValidation = validateBalance(lines)
+      if (!balanceValidation.valid) {
+        return { success: false, error: `${journal.journalNo}: ${balanceValidation.message}` }
+      }
+    }
+
+    // Post all journal entries
+    await prisma.journalEntry.updateMany({
+      where: { id: { in: ids } },
+      data: { status: "POSTED" },
+    })
+
+    revalidatePath("/dashboard/finance/journals")
+    return { success: true, posted: ids.length }
+  } catch (error) {
+    console.error("Error bulk posting journal entries:", error)
+    return { success: false, error: "Failed to post journal entries" }
+  }
+}
+
+export async function bulkDeleteJournalEntries(ids: string[]) {
+  try {
+    // Get all journal entries to validate
+    const journals = await prisma.journalEntry.findMany({
+      where: { id: { in: ids } },
+    })
+
+    // Check for any that are posted
+    const posted = journals.filter((j) => j.status === "POSTED")
+    if (posted.length > 0) {
+      return {
+        success: false,
+        error: `Cannot delete posted journals: ${posted.map((j) => j.journalNo).join(", ")}. Create reversing entries instead.`,
+      }
+    }
+
+    // Delete all draft journal entries
+    await prisma.journalEntry.deleteMany({
+      where: { id: { in: ids }, status: "DRAFT" },
+    })
+
+    revalidatePath("/dashboard/finance/journals")
+    return { success: true, deleted: ids.length }
+  } catch (error) {
+    console.error("Error bulk deleting journal entries:", error)
+    return { success: false, error: "Failed to delete journal entries" }
+  }
+}
