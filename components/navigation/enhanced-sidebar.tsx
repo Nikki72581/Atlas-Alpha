@@ -28,9 +28,11 @@ import {
   AlertCircle,
   Building2,
   ArrowLeftRight,
+  LogOut,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface NavItem {
   title: string
@@ -265,6 +267,7 @@ export function EnhancedSidebar({
   organizationName,
 }: EnhancedSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [expandedSections, setExpandedSections] = useState<string[]>([
     'Order to Cash',
     'Procure to Pay',
@@ -469,7 +472,18 @@ export function EnhancedSidebar({
 
       {/* Footer */}
       <div className="border-t border-sidebar-border px-4 py-3">
-        <p className="text-[10px] text-muted-foreground/60">
+        <button
+          onClick={async () => {
+            await fetch('/api/auth/logout', { method: 'POST' })
+            router.push('/login')
+            router.refresh()
+          }}
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Sign out
+        </button>
+        <p className="mt-2 text-[10px] text-muted-foreground/60">
           Atlas Alpha v0.1 · Distribution ERP
         </p>
       </div>
