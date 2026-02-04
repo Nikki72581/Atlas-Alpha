@@ -12,7 +12,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-dm-serif);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -200,7 +199,8 @@
 
   /* Refined typography scales */
   h1, h2, h3, .font-display {
-    font-family: var(--font-dm-serif), ui-serif, Georgia, serif;
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
     letter-spacing: -0.02em;
   }
 

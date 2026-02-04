@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { DM_Sans, DM_Serif_Display } from "next/font/google"
+import { DM_Sans } from "next/font/google"
 import "./globals.css"
 
 import { Toaster } from "@/components/ui/toaster"
@@ -12,13 +12,6 @@ const dmSans = DM_Sans({
   display: "swap",
 })
 
-const dmSerif = DM_Serif_Display({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-dm-serif",
-  display: "swap",
-})
-
 export const metadata: Metadata = {
   title: "Atlas Alpha",
   description: "Atlas Alpha ERP — Distribution-first, built for operators who outgrew spreadsheets",
@@ -26,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${dmSerif.variable}`}>
+    <html lang="en" suppressHydrationWarning className={dmSans.variable}>
       <body className={dmSans.className}>
         <ThemeWrapper initialTheme="system">
           {children}
