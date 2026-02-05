@@ -16,6 +16,7 @@ import {
   FileSearch,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Database,
   Receipt,
   BookOpen,
@@ -257,6 +258,8 @@ interface EnhancedSidebarProps {
   unpaidCount?: number
   userName?: string
   organizationName?: string
+  collapsed?: boolean
+  onCollapsedChange?: (collapsed: boolean) => void
 }
 
 export function EnhancedSidebar({
@@ -265,9 +268,13 @@ export function EnhancedSidebar({
   unpaidCount = 0,
   userName,
   organizationName,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
 }: EnhancedSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [internalCollapsed, setInternalCollapsed] = useState(false)
+  const collapsed = controlledCollapsed ?? internalCollapsed
   const [expandedSections, setExpandedSections] = useState<string[]>([
     'Order to Cash',
     'Procure to Pay',
@@ -275,6 +282,12 @@ export function EnhancedSidebar({
     'Finance',
     'Reports',
   ])
+
+  const toggleCollapsed = () => {
+    const newValue = !collapsed
+    setInternalCollapsed(newValue)
+    onCollapsedChange?.(newValue)
+  }
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) =>
@@ -320,6 +333,31 @@ export function EnhancedSidebar({
 
     // Section with children
     if (hasChildren) {
+      // When collapsed, show only the parent icon with link to first child
+      if (collapsed) {
+        const firstChildWithHref = item.children?.find(c => c.href)
+        return (
+          <div key={item.title} className="relative group">
+            <Link
+              href={firstChildWithHref?.href || '#'}
+              className={cn(
+                'flex items-center justify-center rounded-lg p-2.5 transition-all duration-200',
+                'hover:bg-accent/60'
+              )}
+              title={item.title}
+            >
+              <div className={cn('rounded-md p-1.5 transition-colors', colors.bg)}>
+                <Icon className={cn('h-4 w-4', colors.icon)} />
+              </div>
+            </Link>
+            {/* Tooltip */}
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+              {item.title}
+            </div>
+          </div>
+        )
+      }
+
       return (
         <div key={item.title} className="space-y-0.5">
           <button
@@ -359,7 +397,47 @@ export function EnhancedSidebar({
       )
     }
 
-    // Regular link item
+    // Regular link item - collapsed mode
+    if (collapsed && level === 0) {
+      return (
+        <div key={item.title} className="relative group">
+          <Link
+            href={item.href!}
+            className={cn(
+              'flex items-center justify-center rounded-lg p-2.5 transition-all duration-200',
+              'hover:bg-accent/60',
+              active && cn(colors.activeBg, 'shadow-sm')
+            )}
+            title={item.title}
+          >
+            <div
+              className={cn(
+                'rounded-md p-1.5 transition-all duration-200',
+                active ? colors.bg : 'bg-transparent group-hover:bg-accent/50'
+              )}
+            >
+              <Icon
+                className={cn(
+                  'h-4 w-4 transition-all duration-200',
+                  active ? colors.icon : 'text-muted-foreground group-hover:text-foreground'
+                )}
+              />
+            </div>
+            {badgeValue && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                {typeof badgeValue === 'number' && badgeValue > 9 ? '9+' : badgeValue}
+              </span>
+            )}
+          </Link>
+          {/* Tooltip */}
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+            {item.title}
+          </div>
+        </div>
+      )
+    }
+
+    // Regular link item - expanded mode
     return (
       <Link
         key={item.title}
@@ -397,20 +475,30 @@ export function EnhancedSidebar({
   }
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside
+      className={cn(
+        'flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300',
+        collapsed ? 'w-[68px]' : 'w-64'
+      )}
+    >
       {/* Brand Header */}
-      <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+      <div className={cn(
+        'flex items-center border-b border-sidebar-border py-4 transition-all duration-300',
+        collapsed ? 'justify-center px-2' : 'gap-3 px-4'
+      )}>
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 flex-shrink-0">
           <Hexagon className="h-5 w-5 text-primary" strokeWidth={1.5} />
         </div>
-        <div className="flex flex-col">
-          <span className="font-display text-lg tracking-tight">Atlas</span>
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Alpha</span>
-        </div>
+        {!collapsed && (
+          <div className="flex flex-col">
+            <span className="font-display text-lg tracking-tight">Atlas</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Alpha</span>
+          </div>
+        )}
       </div>
 
       {/* Organization & User Info */}
-      {(organizationName || userName) && (
+      {(organizationName || userName) && !collapsed && (
         <div className="border-b border-sidebar-border px-4 py-3">
           <div className="space-y-1.5">
             {organizationName && (
@@ -431,13 +519,13 @@ export function EnhancedSidebar({
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-3">
-        <nav className="space-y-1 px-3">
+        <nav className={cn('space-y-1', collapsed ? 'px-2' : 'px-3')}>
           {navigation.map((item) => renderNavItem(item))}
         </nav>
       </div>
 
       {/* Action Required Section */}
-      {userRole === 'ADMIN' && (pendingCount > 0 || unpaidCount > 0) && (
+      {userRole === 'ADMIN' && (pendingCount > 0 || unpaidCount > 0) && !collapsed && (
         <div className="border-t border-sidebar-border p-3">
           <div className="rounded-lg bg-[oklch(0.55_0.22_25/0.06)] dark:bg-[oklch(0.60_0.20_25/0.10)] p-3">
             <div className="flex items-center gap-2 mb-2">
@@ -470,22 +558,75 @@ export function EnhancedSidebar({
         </div>
       )}
 
+      {/* Collapsed Action Indicator */}
+      {userRole === 'ADMIN' && (pendingCount > 0 || unpaidCount > 0) && collapsed && (
+        <div className="border-t border-sidebar-border p-2">
+          <div className="relative group flex justify-center">
+            <Link
+              href="/dashboard/sales-orders?status=PENDING"
+              className="flex items-center justify-center rounded-lg p-2 bg-[oklch(0.55_0.22_25/0.06)] dark:bg-[oklch(0.60_0.20_25/0.10)] hover:bg-[oklch(0.55_0.22_25/0.12)]"
+            >
+              <AlertCircle className="h-4 w-4 text-[oklch(0.50_0.20_25)]" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
+                {pendingCount + unpaidCount > 9 ? '9+' : pendingCount + unpaidCount}
+              </span>
+            </Link>
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+              Action Required
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="border-t border-sidebar-border px-4 py-3">
+      <div className={cn(
+        'border-t border-sidebar-border py-3 transition-all duration-300',
+        collapsed ? 'px-2' : 'px-4'
+      )}>
+        {/* Collapse Toggle Button */}
         <button
-          onClick={async () => {
-            await fetch('/api/auth/logout', { method: 'POST' })
-            router.push('/login')
-            router.refresh()
-          }}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+          onClick={toggleCollapsed}
+          className={cn(
+            'flex w-full items-center rounded-lg py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground mb-2',
+            collapsed ? 'justify-center px-0' : 'gap-2 px-2'
+          )}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <LogOut className="h-3.5 w-3.5" />
-          Sign out
+          <ChevronLeft className={cn(
+            'h-3.5 w-3.5 transition-transform duration-300',
+            collapsed && 'rotate-180'
+          )} />
+          {!collapsed && <span>Collapse</span>}
         </button>
-        <p className="mt-2 text-[10px] text-muted-foreground/60">
-          Atlas Alpha v0.1 · Distribution ERP
-        </p>
+
+        {/* Sign Out Button */}
+        <div className="relative group">
+          <button
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' })
+              router.push('/login')
+              router.refresh()
+            }}
+            className={cn(
+              'flex w-full items-center rounded-lg py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+              collapsed ? 'justify-center px-0' : 'gap-2 px-2'
+            )}
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            {!collapsed && <span>Sign out</span>}
+          </button>
+          {collapsed && (
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+              Sign out
+            </div>
+          )}
+        </div>
+
+        {!collapsed && (
+          <p className="mt-2 text-[10px] text-muted-foreground/60">
+            Atlas Alpha v0.1 · Distribution ERP
+          </p>
+        )}
       </div>
     </aside>
   )
